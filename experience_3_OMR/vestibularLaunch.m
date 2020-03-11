@@ -1,4 +1,4 @@
-function vestibularLaunch(duration, path, handles, speed, gain, proto_name, initial_angle, track_params)
+function vestibularLaunch(duration, path, handles, speed, gain, proto_name, track_params)
 
     % Create video writer and save it in handles
     vw = VideoWriter([path '.avi'], 'Grayscale AVI');
@@ -9,17 +9,26 @@ function vestibularLaunch(duration, path, handles, speed, gain, proto_name, init
     % Build parameters structure
     params.duration = duration; % duration [minutes]
     % Vestibular parameters
-    params.moment_threshold = 7.5; % moment threshold for triggering an action
-    params.interboutTime = 1.5; % minimum time before triggering another correction [seconds]
-    params.speed = speed; % rotation of motor [degrees per second]
+    params.moment_threshold = 6; % moment threshold for triggering an action
+    params.interboutTime = 0.5; % minimum time before triggering another correction [seconds]
+    params.speed = speed; % rotation of pattern [degrees per second]
     % Correction parameters
-    params.multiplicator = 20; % multiplicator to which fish moment is multiplied by
+    params.multiplicator = 0.4; % multiplicator to which pattern correction length is multiplied by
     params.gain = gain; % coefficient by which multiplicator is multiplied (to use in adaptation)
-    params.correctionAngle = params.multiplicator*params.gain; % motor angular correction per swim bout [degrees]
-    params.correctionLength = 1.5;
-%     params.reinitializing = 0.5; % if fish does not move, reinintialize after this time [minutes]
-    % Set initial angle after shaking
-    params.initial_angle = initial_angle;
+    params.correctionLength = params.multiplicator * abs(params.gain); % length of correction [seconds]
+    params.rcorrect = sign(gain) * 60; % pattern correction speed [degrees per second]
+    
+    % Delete pattern if baseline mode
+    if isequal(proto_name, 'baseline')
+        windmillWingNumber = 8;
+        horizonAngle = 180;
+        power = 0.5;
+    else
+        windmillWingNumber = 8;
+        horizonAngle = 180;
+        power = 1;
+    end
+    handles.proj.changePattern(windmillWingNumber, horizonAngle, power);
 
     % Launch function responsible for movement
     obj = vestibularMove(params, handles, track_params);
@@ -27,6 +36,10 @@ function vestibularLaunch(duration, path, handles, speed, gain, proto_name, init
     % Save additional parameters
     obj.StartTime = handles.StartTime; % sauve le temps de départ
     obj.params = params; % sauve les paramètres spécifiques
+    % And parameters related to pattern
+    obj.pattern.windmillWingNumber = windmillWingNumber;
+    obj.pattern.horizonAngle = horizonAngle;
+    obj.pattern.power = power;
     
     % Save data
     save(path, 'obj');

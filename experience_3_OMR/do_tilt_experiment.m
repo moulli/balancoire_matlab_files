@@ -1,13 +1,8 @@
-%% --- define the parameters (limit angle) specific for tilting
+%% all the handles in one structure
 
-motor.home()
-motor.setSoftLimits(-75, 75)
-motor.degreePerStep = - 0.006;
-
-% all the handles in one structure
-
+proj.translate(0,-20)
 handles.camera = camera;
-handles.motor = motor;
+handles.proj = proj;
 
 
 %% launches the experiment
@@ -17,8 +12,8 @@ clc % clear command line
 
 %% Number of fish for the day
 
-FISH_NUMBER = 1;
-FISH_AGE = 6;
+FISH_NUMBER = 3;
+FISH_AGE = 7;
 
 
 %% Create adequate folder
@@ -58,14 +53,40 @@ mkdir(recordpath)
 fprintf('Directory created at %s \n', recordpath);
 
 
-%% Show experiment is running on screen
+%% Define protocol for experiment
 
-disp('      ___________________________________________________________')
-disp('      |                                                         |')
-disp('      |                                                         |')
-disp('      |                  EXPERIMENT IN PROGRESS                 |')
-disp('      |                                                         |')
-disp('      |_________________________________________________________|')
+% % % % % % % % % % % % protocol { type, duration (minutes), [options] }
+repetitions = 1;        % number of times the protocol will be repeated
+
+speedin = 10;
+lengthin = 2;
+
+switch run
+    case 1
+        % Case first run:
+        protocol = {
+                    'baseline', lengthin/2, 'speed', 0, 'gain', 0;
+                    'OMR', lengthin, 'speed', speedin, 'gain', -1;
+                    'baseline', lengthin/4, 'speed', 0, 'gain', 0;
+                    'OMR', lengthin, 'speed', speedin, 'gain', -1;
+                    'baseline', lengthin/4, 'speed', 0, 'gain', 0;
+                    'OMR', lengthin, 'speed', speedin, 'gain', -1.5;
+                    'baseline', lengthin/4, 'speed', 0, 'gain', 0;
+                    'OMR', lengthin, 'speed', speedin, 'gain', -0.5;
+                    };
+    otherwise
+        % Case not first run:    
+        protocol = {
+                    'baseline', lengthin/4, 'speed', 0, 'gain', 0;
+                    'OMR', lengthin, 'speed', speedin, 'gain', -1;
+                    'baseline', lengthin/4, 'speed', 0, 'gain', 0;
+                    'OMR', lengthin, 'speed', speedin, 'gain', -1;
+                    'baseline', lengthin/4, 'speed', 0, 'gain', 0;
+                    'OMR', lengthin, 'speed', speedin, 'gain', -1.5;
+                    'baseline', lengthin/4, 'speed', 0, 'gain', 0;
+                    'OMR', lengthin, 'speed', speedin, 'gain', -0.5;
+                    };
+end
 
 
 %% Define tracking parameters
@@ -81,37 +102,14 @@ track_params.num_pix1 = 100; % same as default value
 track_params.num_pix2 = 500; % same as default value
 
 
-%% Define protocol for experiment
+%% Show experiment is running on screen
 
-% % % % % % % % % % % % protocol { type, duration (minutes), [options] }
-repetitions = 1;        % number of times the protocol will be repeated
-
-speedin = 4;
-lengthin = 0.5;
-
-switch run
-    case 1
-        % Case first run:
-        protocol = {
-                    'baseline', lengthin, 'speed', 0, 'gain', 0, 'initial_angle', 0;
-                    'vestibular', lengthin, 'speed', -speedin, 'gain', +1, 'initial_angle', 0;
-                    'vestibular', lengthin, 'speed', -speedin, 'gain', +1.25, 'initial_angle', 0;
-                    'vestibular', lengthin, 'speed', -speedin, 'gain', +0.75, 'initial_angle', 0;
-                    'vestibular', lengthin, 'speed', speedin, 'gain', -1, 'initial_angle', 0;
-                    'vestibular', lengthin, 'speed', speedin, 'gain', -1.25, 'initial_angle', 0;
-                    'vestibular', lengthin, 'speed', speedin, 'gain', -0.75, 'initial_angle', 0;
-                    };
-    otherwise
-        % Case not first run:    
-        protocol = {
-                    'vestibular', lengthin, 'speed', -speedin, 'gain', +1, 'initial_angle', 0;
-                    'vestibular', lengthin, 'speed', -speedin, 'gain', +1.25, 'initial_angle', 0;
-                    'vestibular', lengthin, 'speed', -speedin, 'gain', +0.75, 'initial_angle', 0;
-                    'vestibular', lengthin, 'speed', speedin, 'gain', -1, 'initial_angle', 0;
-                    'vestibular', lengthin, 'speed', speedin, 'gain', -1.25, 'initial_angle', 0;
-                    'vestibular', lengthin, 'speed', speedin, 'gain', -0.75, 'initial_angle', 0;
-                    };
-end
+disp('      ___________________________________________________________')
+disp('      |                                                         |')
+disp('      |                                                         |')
+disp('      |                  EXPERIMENT IN PROGRESS                 |')
+disp('      |                                                         |')
+disp('      |_________________________________________________________|')
            
         
 %% Launch actual experiment
@@ -132,9 +130,8 @@ for i = 1:repetitions
         % Get parameters from protocol
         speed = protocol{j, 4}; % speed for motor rotation
         gain = protocol{j, 6}; % gain after fish movement
-        initial_angle = protocol{j, 8};
         % Launch function vestibularLaunch
-        vestibularLaunch(duration, path, handles, speed, gain, proto_name, initial_angle, track_params);
+        vestibularLaunch(duration, path, handles, speed, gain, proto_name, track_params);
     end
 end
 
