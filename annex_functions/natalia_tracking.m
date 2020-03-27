@@ -3,7 +3,7 @@ clear; close all; clc
 
 %% Load video
 
-vid_path = '/home/ljp/Science/balancoire_data/video.avi';
+vid_path = '/home/ljp/Desktop/video.avi';
 vid = VideoReader(vid_path);
 
 
@@ -46,6 +46,7 @@ dvectn = dvect ./ sqrt(sum(dvect.^2));
 
 %% Ok let's try our modified function
 
+num_segments = 10;
 [segment_pts, coms, polygons] = segmentTracking(im, 'num_segments', num_segments, 'inertia', 0.2, 'body_length', 0, 'tail_length', 120, 'initial_box', 0.5);
 figure
 hold on
@@ -135,7 +136,7 @@ end
 %% Optional: create a tracking video
 
 % Video creation
-vid_path = '/home/ljp/Science/balancoire_data/2020-02/19/fish1_7dpf/run10/1-1-baseline.avi';
+vid_path = '/home/ljp/Desktop/video.avi';
 
 vid = VideoReader(vid_path);
 numframes = floor(vid.Duration * vid.FrameRate);
@@ -181,6 +182,13 @@ for i = 1:numframes
 end
 
 close(writerObj)
+
+
+%% boutWrapper test
+
+tracking = boutsWrapper(vid_path, 'num_segments', parameters.num_segments, 'inertia', parameters.inertia, 'body_length', parameters.body_length, ...
+                                      'tail_length', parameters.tail_length, 'initial_box', parameters.initial_box,  'box_increment', parameters.box_increment, ...
+                                      'trigger_value', 15, 'num_pts_after', 5);
     
 
 
