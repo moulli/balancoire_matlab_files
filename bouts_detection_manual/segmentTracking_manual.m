@@ -1,4 +1,4 @@
-function [segment_pts, coms, polygons] = segmentTracking(im, varargin)
+function [segment_pts, coms, polygons] = segmentTracking_manual(im, com1, vect0, varargin)
 
 %% segmentTracking returns tail as a combination of segments
 %
@@ -13,6 +13,9 @@ function [segment_pts, coms, polygons] = segmentTracking(im, varargin)
 %
 %  Inputs:
 %  - im [2D matrix]: image, with zebrafish, and its eyes visible.
+%  - com1 [2D vector]: first center of mass.
+%  - vect0 [2D vector]: normalized directional vector between first center
+%    of mass and second center of mass.
 %  - num_segments [integer, optional]: number of segments to use.
 %  - tail_length [number, optional]: length of the tail.
 %  - body_length [number, optional]: length between eyes and beginning of 
@@ -21,10 +24,6 @@ function [segment_pts, coms, polygons] = segmentTracking(im, varargin)
 %    are more stable, the inertia is the proportion of the former segment
 %    we want in the segment we are computing. This allows for a smoothing
 %    of the tail representation.
-%  - num_pix1 [integer, optional]: number of pixels to use to get first
-%    center of mass to get fish orientation.
-%  - num_pix2 [integer, optional]: number of pixels to use to get second
-%    center of mass to get fish orientation.
 %  - initial_box [number, optional]: length of initial box for tail
 %    tracking.
 %  - box_increment [number, optional]: increment for box length for each
@@ -59,40 +58,28 @@ function [segment_pts, coms, polygons] = segmentTracking(im, varargin)
     defaultTailLength = 80; % tail usually between 80 and 95 pixels
     defaultBodyLength = 35; % in pixels as well
     defaultInertia = 0;
-    defaultNumPix1 = 100; % number of pixels for COM 1
-    defaultNumPix2 = 500; % number of pixels for COM 2
     defaultInitialBox = 0.3;
     defaultBoxIncrement = 0.03;
     
     % Input parser
     p = inputParser;
     addRequired(p, 'im');
+    addRequired(p, 'com1');
+    addRequired(p, 'vect0');
     addOptional(p, 'num_segments', defaultNumSegs);
     addOptional(p, 'tail_length', defaultTailLength);
     addOptional(p, 'body_length', defaultBodyLength);
     addOptional(p, 'inertia', defaultInertia);
-    addOptional(p, 'num_pix1', defaultNumPix1);
-    addOptional(p, 'num_pix2', defaultNumPix2);
     addOptional(p, 'initial_box', defaultInitialBox);
     addOptional(p, 'box_increment', defaultBoxIncrement);
-    parse(p, im, varargin{:});
+    parse(p, im, com1, vect0, varargin{:});
     
     
     %% Find beginnig of tail using eyes
     
-    % First COM
-    f_ind1 = find(p.Results.im <= quantile(p.Results.im(:), p.Results.num_pix1/numel(p.Results.im)));
-    [fx1, fy1] = ind2sub(size(p.Results.im), f_ind1);
-    com1 = mean([fx1, fy1]);
-
-    % Second COM
-    f_ind2 = find(p.Results.im <= quantile(p.Results.im(:), p.Results.num_pix2/numel(p.Results.im)));
-    [fx2, fy2] = ind2sub(size(p.Results.im), f_ind2);
-    com2 = mean([fx2, fy2]);
-    
-    % Get direction vector and average it
-    vect0 = com2 - com1;
-    vect0 = vect0 ./ sqrt(sum(vect0.^2));
+    % First COM and directional vector
+    com1 = p.Results.com1;
+    vect0 = p.Results.vect0;
     
     % Get beginning of tail
     beginning_tail = com1 + p.Results.body_length*vect0;
@@ -132,10 +119,12 @@ function [segment_pts, coms, polygons] = segmentTracking(im, varargin)
         % Get points inside region
         pts_in_region = inpolygon(Xt, Yt, polydef(:, 1), polydef(:, 2));   
         pts_to_keep = sub2ind(size(p.Results.im), Xt(pts_in_region), Yt(pts_in_region));
-        im_vals = (256 - double(p.Results.im(pts_to_keep))).^4;
+        im_vals = double(p.Results.im(pts_to_keep));
+        im_vals = (im_vals - min(im_vals) + 1).^4;
         pts_in_region2 = inpolygon(Xt, Yt, polydef2(:, 1), polydef2(:, 2));   
         pts_to_keep2 = sub2ind(size(p.Results.im), Xt(pts_in_region2), Yt(pts_in_region2));
-        im_vals2 = (256 - double(p.Results.im(pts_to_keep2))).^4;
+        im_vals2 = double(p.Results.im(pts_to_keep2));
+        im_vals2 = (im_vals2 - min(im_vals2) + 1).^4;
         
         % Find center of mass
         com = [im_vals' * Xt(pts_in_region) / sum(im_vals), ...
