@@ -12,7 +12,7 @@ clc % clear command line
 
 %% Number of fish for the day
 
-FISH_NUMBER = 3;
+FISH_NUMBER = 10;
 FISH_AGE = 7;
 
 
